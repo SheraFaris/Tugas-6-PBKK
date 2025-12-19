@@ -7,23 +7,36 @@ export default function NewPost() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const router = useRouter();
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
 
     if (!posterName.trim() || !content.trim()) return;
 
     setIsSubmitting(true);
 
-    setTimeout(() => {
-      console.log("Post created:", {
-        posterName: posterName.trim(),
-        content: content.trim(),
-        id: Date.now().toString(),
-        createdAt: new Date().toISOString()
+    try {
+      const response = await fetch("http://localhost:3000/posts", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          posterName: posterName.trim(),
+          content: content.trim(),
+        }),
       });
-      alert("Post created successfully!");
-      router.push("/");
-    }, 1000);
+
+      if (response.ok) {
+        alert("Post created successfully!");
+        router.push("/");
+      } else {
+        alert("Failed to create post");
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      alert("Error creating post");
+      setIsSubmitting(false);
+    }
   }
 
   return (

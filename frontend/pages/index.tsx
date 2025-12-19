@@ -10,75 +10,47 @@ interface Post {
   replies: Post[];
 }
 
-const hardcodedPosts: Post[] = [
-  {
-    id: "1",
-    posterName: "John Doe",
-    content: "This is my first post! Welcome to our platform.",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-    replies: [
-      {
-        id: "2",
-        posterName: "Jane Smith",
-        content: "Welcome! Great to have you here.",
-        replyToId: "1",
-        createdAt: "2024-01-15T11:00:00Z",
-        updatedAt: "2024-01-15T11:00:00Z",
-        replies: []
-      }
-    ]
-  },
-  {
-    id: "3",
-    posterName: "Alice Johnson",
-    content: "Just finished reading an amazing book about React development. Highly recommend it to anyone learning frontend!",
-    createdAt: "2024-01-16T14:20:00Z",
-    updatedAt: "2024-01-16T14:20:00Z",
-    replies: []
-  },
-  {
-    id: "4",
-    posterName: "Bob Wilson",
-    content: "Having trouble with TypeScript generics. Any good resources to share?",
-    createdAt: "2024-01-17T09:15:00Z",
-    updatedAt: "2024-01-17T09:15:00Z",
-    replies: [
-      {
-        id: "5",
-        posterName: "Carol Brown",
-        content: "Check out the official TypeScript handbook. It has great examples!",
-        replyToId: "4",
-        createdAt: "2024-01-17T10:30:00Z",
-        updatedAt: "2024-01-17T10:30:00Z",
-        replies: []
-      }
-    ]
-  }
-];
-
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  function loadPosts() {
+  async function loadPosts() {
     setLoading(true);
     setError(null);
-    setTimeout(() => {
-      setPosts(hardcodedPosts);
+    try {
+      const response = await fetch("http://localhost:3000/posts");
+      if (!response.ok) {
+        throw new Error("Failed to fetch posts");
+      }
+      const data = await response.json();
+      setPosts(data);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   }
 
   useEffect(() => {
     loadPosts();
   }, []);
 
-  function handleDelete(id: string) {
+  async function handleDelete(id: string) {
     if (confirm("Are you sure?")) {
-      setPosts(prevPosts => prevPosts.filter(post => post.id !== id));
-      alert("Deleted successfully.");
+      try {
+        const response = await fetch(`http://localhost:3000/posts/${id}`, {
+          method: "DELETE",
+        });
+        if (response.ok) {
+          setPosts(prevPosts => prevPosts.filter(post => post.id !== id));
+          alert("Deleted successfully.");
+        } else {
+          alert("Failed to delete post");
+        }
+      } catch (err) {
+        alert("Error deleting post");
+      }
     }
   }
 

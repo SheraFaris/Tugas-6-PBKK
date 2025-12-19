@@ -9,72 +9,8 @@ interface Post {
   replies: Post[];
   createdAt: string;
   updatedAt: string;
+  replyTo?: Post;
 }
-
-const hardcodedPosts: Post[] = [
-  {
-    id: "1",
-    posterName: "John Doe",
-    content: "This is my first post! Welcome to our platform.",
-    createdAt: "2024-01-15T10:30:00Z",
-    updatedAt: "2024-01-15T10:30:00Z",
-    replies: [
-      {
-        id: "2",
-        posterName: "Jane Smith",
-        content: "Welcome! Great to have you here.",
-        replyToId: "1",
-        createdAt: "2024-01-15T11:00:00Z",
-        updatedAt: "2024-01-15T11:00:00Z",
-        replies: []
-      }
-    ]
-  },
-  {
-    id: "2",
-    posterName: "Jane Smith",
-    content: "Welcome! Great to have you here.",
-    replyToId: "1",
-    createdAt: "2024-01-15T11:00:00Z",
-    updatedAt: "2024-01-15T11:00:00Z",
-    replies: []
-  },
-  {
-    id: "3",
-    posterName: "Alice Johnson",
-    content: "Just finished reading an amazing book about React development. Highly recommend it to anyone learning frontend!",
-    createdAt: "2024-01-16T14:20:00Z",
-    updatedAt: "2024-01-16T14:20:00Z",
-    replies: []
-  },
-  {
-    id: "4",
-    posterName: "Bob Wilson",
-    content: "Having trouble with TypeScript generics. Any good resources to share?",
-    createdAt: "2024-01-17T09:15:00Z",
-    updatedAt: "2024-01-17T09:15:00Z",
-    replies: [
-      {
-        id: "5",
-        posterName: "Carol Brown",
-        content: "Check out the official TypeScript handbook. It has great examples!",
-        replyToId: "4",
-        createdAt: "2024-01-17T10:30:00Z",
-        updatedAt: "2024-01-17T10:30:00Z",
-        replies: []
-      }
-    ]
-  },
-  {
-    id: "5",
-    posterName: "Carol Brown",
-    content: "Check out the official TypeScript handbook. It has great examples!",
-    replyToId: "4",
-    createdAt: "2024-01-17T10:30:00Z",
-    updatedAt: "2024-01-17T10:30:00Z",
-    replies: []
-  }
-];
 
 export default function PostDetails() {
   const [post, setPost] = useState<Post | null>(null);
@@ -86,34 +22,49 @@ export default function PostDetails() {
   useEffect(() => {
     if (!postId) return;
 
-    function loadPost() {
+    async function loadPost() {
       setLoading(true);
 
-      setTimeout(() => {
-        const foundPost = hardcodedPosts.find(p => p.id === postId);
-
-        if (foundPost) {
+      try {
+        const response = await fetch(`http://localhost:3000/posts/${postId}`);
+        
+        if (response.ok) {
+          const foundPost = await response.json();
           setPost(foundPost);
 
           if (foundPost.replyToId) {
-            const replyToPostData = hardcodedPosts.find(p => p.id === foundPost.replyToId);
-            setReplyToPost(replyToPostData || null);
+            setReplyToPost(foundPost.replyTo || null);
           }
         } else {
           router.push("/");
         }
-
+      } catch (error) {
+        console.error("Error loading post:", error);
+        router.push("/");
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     }
 
     loadPost();
   }, [postId, router]);
 
-  function handleDelete() {
+  async function handleDelete() {
     if (confirm("Are you sure you want to delete this post?")) {
-      alert("Post deleted successfully");
-      router.push("/");
+      try {
+        const response = await fetch(`http://localhost:3000/posts/${postId}`, {
+          method: "DELETE",
+        });
+        
+        if (response.ok) {
+          alert("Post deleted successfully");
+          router.push("/");
+        } else {
+          alert("Failed to delete post");
+        }
+      } catch (error) {
+        alert("Error deleting post");
+      }
     }
   }
 
